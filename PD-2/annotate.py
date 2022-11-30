@@ -23,7 +23,28 @@ def draw_bbox(img, bbox, text, color=(255,255,255), font=cv.FONT_HERSHEY_SIMPLEX
     text_coordinates = (bbox[0]+1, bbox[1]+1)
     draw_text(img, text, text_coordinates, font, font_scale, color, 1, (0,0,0))
 
-def draw_mask(img, segmentation, color):
+def draw_mask(img, iscrowd, segmentation, color):
+    if iscrowd:
+        h, w = segmentation.get('size')
+        counts = segmentation.get('counts')
+        mask = img.copy()
+        i=0
+        while True:
+            if len(counts) == 0:
+                break
+            i += counts.pop(0)
+            if len(counts) == 0:
+                break
+            n = counts.pop(0)
+
+            for p in range(i, i+n):
+                mask[p%h][p//h] = color
+            
+            i += n
+        alpha = 0.4
+        img = cv.addWeighted(mask, alpha, img, 1 - alpha, 0)
+        return img
+
     segments = []
     for segment in segmentation:
         segments.append([[segment[i], segment[i+1]] for i in range(0, len(segment), 2)])
@@ -34,7 +55,7 @@ def draw_mask(img, segmentation, color):
         cv.polylines(img, [pts], True, color)
         mask = img.copy()
         cv.fillPoly(mask, [pts], color)
-        alpha = 0.3
+        alpha = 0.4
         img = cv.addWeighted(mask, alpha, img, 1 - alpha, 0)
         return img
 
@@ -50,8 +71,6 @@ def annotate(image, image_info, image_annotations, categories, show_bbox=True, s
     min_font_scale = image_height/1200
     max_font_scale = image_height/400
     for annotation in image_annotations:
-        if annotation.get('iscrowd', False):
-            continue
         category = categories.get(annotation.get('category_id', -1), None)
         if category is None:
             continue
@@ -67,9 +86,10 @@ def annotate(image, image_info, image_annotations, categories, show_bbox=True, s
 
         font_scale = min_font_scale + (max_font_scale-min_font_scale)*min(0.2, ratio)*5
         
+        iscrowd = annotation.get('iscrowd', 0)    
         # draw mask
         if show_mask:
-            img = draw_mask(img, annotation.get('segmentation', [[]]), color)
+            img = draw_mask(img, iscrowd, annotation.get('segmentation', [[]]), color)
 
         # draw bbox
         if show_bbox:
