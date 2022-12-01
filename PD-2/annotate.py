@@ -16,7 +16,7 @@ def draw_text(img, text,
     text_w, text_h = text_size
     cv.rectangle(img, pos, (x + text_w, y + text_h + 1), text_color_bg, -1)
     cv.putText(img, text, (x, y + text_h - 1), font, font_scale, text_color, font_thickness)
-    return text_size
+    return img
 
 def draw_bbox(img, bbox, text, color=(255,255,255), font=cv.FONT_HERSHEY_SIMPLEX, font_scale=1):
     cv.rectangle(img, bbox[:2], bbox[2:4], color, 1)
